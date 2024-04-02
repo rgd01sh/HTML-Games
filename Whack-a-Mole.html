@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole</title>
+    <style>
+        body {
+            background-color: #282c35;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #ffcc00;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        #game-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            border: 5px solid #ffffff;
+            overflow: hidden;
+            border-radius: 15px;
+            perspective: 1000px;
+        }
+
+        .hole {
+            width: 100px;
+            height: 100px;
+            position: absolute;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            transform-style: preserve-3d;
+        }
+
+        .hole:hover {
+            transform: scale(1.1);
+        }
+
+        .mole {
+            width: 60px;
+            height: 60px;
+            background-color: #D2B48C;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: none;
+            transform-style: preserve-3d;
+        }
+
+        #score,
+        #hearts,
+        #levels {
+            font-size: 18px;
+            margin-top: 10px;
+            color: #ffcc00;
+        }
+
+        #hearts {
+            color: #ff6666;
+        }
+
+        #restart-btn,
+        #level-btn,
+        #instructions-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #instructions-btn {
+            border-radius: 50%; /* Make it circular */
+        }
+
+        #restart-btn:hover,
+        #level-btn:hover,
+        #instructions-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .level-circle {
+            width: 20px;
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 50%;
+            margin: 5px;
+            display: inline-block;
+        }
+
+        .level-circle.completed {
+            background-color: #27ae60; /* Change color for completed levels */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Whack-a-Mole</h1>
+    <div id="container">
+        <div id="levels">Level: <span id="current-level">1</span></div>
+        <div id="game-container"></div>
+        <div id="score">Score: 0</div>
+        <div id="hearts">Hearts: <span id="heart-count">3</span></div>
+        <button id="restart-btn" style="display: none;" onclick="startGame()">Restart</button>
+        <button id="level-btn" onclick="showLevels()">Levels</button>
+        <button id="instructions-btn" onclick="showInstructions()" style="border-radius: 60%;">?</button>
+    </div>
+
+    <!-- Modal for Instructions -->
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('instructionsModal')">&times;</span>
+            <h2>Instructions</h2>
+            <p>Welcome to Whack-a-Mole!</p>
+            <p>Your goal is to whack as many moles as you can to score points.</p>
+            <p>Click on the moles as they pop up, but be careful not to miss them!</p>
+            <p>Each level has a target score, and as you progress, the game will get faster.</p>
+            <p>Keep an eye on your hearts - missing a mole will cost you a heart!</p>
+            <p>Good luck and have fun!</p>
+        </div>
+    </div>
+
+    <!-- Modal for Level Achievements -->
+    <div id="levelModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('levelModal')">&times;</span>
+            <h2>Level Achievements</h2>
+            <p>Congratulations on your achievements so far!</p>
+            <p>Here are the levels you have completed:</p>
+            <div id="level-circles-container">
+                <!-- Add 10 circles representing the levels -->
+                <div class="level-circle" id="circle1"></div>
+                <div class="level-circle" id="circle2"></div>
+                <div class="level-circle" id="circle3"></div>
+                <div class="level-circle" id="circle4"></div>
+                <div class="level-circle" id="circle5"></div>
+                <div class="level-circle" id="circle6"></div>
+                <div class="level-circle" id="circle7"></div>
+                <div class="level-circle" id="circle8"></div>
+                <div class="level-circle" id="circle9"></div>
+                <div class="level-circle" id="circle10"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const heartsElement = document.getElementById('heart-count');
+        const restartButton = document.getElementById('restart-btn');
+        const levelButton = document.getElementById('level-btn');
+        const instructionsButton = document.getElementById('instructions-btn');
+        const levelModal = document.getElementById('levelModal');
+        const currentLevelElement = document.getElementById('current-level');
+        const completedLevelsElement = document.getElementById('completed-levels');
+        const instructionsModal = document.getElementById('instructionsModal');
+
+        let score = 0;
+        let hearts = 3;
+        let isGameRunning = false;
+        let moleTimeout;
+        let timeoutDuration = 1000; // Initial timeout duration
+        let level = 1;
+        const levels = [
+            { target: 5, moles: 1 },
+            { target: 10, moles: 1 },
+            { target: 15, moles: 1 },
+            { target: 20, moles: 1 },
+            { target: 25, moles: 2 },
+            { target: 30, moles: 2 },
+            { target: 35, moles: 2 },
+            { target: 40, moles: 2 },
+            { target: 45, moles: 3 },
+            { target: 50, moles: 3 }
+        ];
+        let completedLevels = [];
+
+        function createHole(index) {
+            const hole = document.createElement('div');
+            hole.classList.add('hole');
+            hole.style.top = `${Math.floor(index / 3) * 100}px`;
+            hole.style.left = `${(index % 3) * 100}px`;
+
+            const mole = document.createElement('div');
+            mole.classList.add('mole');
+            hole.appendChild(mole);
+
+            hole.addEventListener('click', () => {
+                if (isGameRunning) {
+                    whackMole();
+                }
+            });
+
+            gameContainer.appendChild(hole);
+        }
+
+        function createMole() {
+            const moles = document.querySelectorAll('.mole');
+            moles.forEach(mole => {
+                mole.style.display = 'none';
+            });
+
+            for (let i = 0; i < levels[level - 1].moles; i++) {
+                const randomIndex = Math.floor(Math.random() * moles.length);
+                moles[randomIndex].style.display = 'block';
+            }
+
+            moleTimeout = setTimeout(() => {
+                moles.forEach(mole => {
+                    mole.style.display = 'none';
+                });
+                missMole();
+            }, timeoutDuration);
+        }
+
+        function whackMole() {
+            score++;
+            clearTimeout(moleTimeout);
+            updateScore();
+
+            if (score >= levels[level - 1].target) {
+                level++;
+                hearts = 3; // Reset hearts at the start of a new level
+                updateHearts();
+                updateLevel();
+                showLevelComplete();
+            }
+
+            increaseSpeed(); // Decrease timeout duration
+            createMole();
+        }
+
+        function missMole() {
+            hearts--;
+            updateHearts();
+
+            if (hearts === 0) {
+                endGame();
+            } else {
+                increaseSpeed(); // Decrease timeout duration
+                createMole();
+            }
+        }
+
+        function updateScore() {
+            scoreElement.textContent = `Score: ${score}`;
+        }
+
+        function updateHearts() {
+            heartsElement.textContent = hearts;
+        }
+
+        function increaseSpeed() {
+            // Decrease the timeout duration, making the game faster
+            timeoutDuration = Math.max(200, timeoutDuration - 50);
+        }
+
+        function startGame() {
+            restartButton.style.display = 'none';
+            if (!isGameRunning) {
+                score = 0;
+                hearts = 3;
+                level = 1;
+                isGameRunning = true;
+                updateScore();
+                updateHearts();
+                updateLevel();
+                createMole();
+            }
+        }
+
+        function endGame() {
+            isGameRunning = false;
+            alert(`Game Over! Your final score: ${score}`);
+            clearTimeout(moleTimeout);
+            restartButton.style.display = 'block';
+        }
+
+        function updateLevel() {
+            currentLevelElement.textContent = level;
+        }
+
+        function showLevels() {
+            // Reset all circles
+            for (let i = 1; i <= 10; i++) {
+                const circle = document.getElementById(`circle${i}`);
+                circle.classList.remove('completed');
+            }
+
+            // Add 'completed' class to circles based on completed levels
+            for (let i = 1; i <= completedLevels.length; i++) {
+                const circle = document.getElementById(`circle${i}`);
+                circle.classList.add('completed');
+            }
+
+            showModal('levelModal');
+        }
+
+        function showInstructions() {
+            showModal('instructionsModal');
+        }
+
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'none';
+        }
+
+        function showLevelComplete() {
+            completedLevels.push(`Level ${level - 1}: ${score}`);
+            alert(`Level ${level - 1} Complete! Your score: ${score}`);
+        }
+
+        // Create 9 holes
+        for (let i = 0; i < 9; i++) {
+            createHole(i);
+        }
+
+        // Start the game after a short delay
+        setTimeout(startGame, 1000);
+    </script>
+</body>
+
+</html>

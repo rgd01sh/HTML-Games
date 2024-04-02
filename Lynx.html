@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* Sky Blue */
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+    <title>Lynx Pine Cone Collector</title>
+</head>
+<body>
+
+<audio id="collectSound" src="collect.mp3"></audio>
+<audio id="hitSound" src="hit.mp3"></audio>
+<audio id="backgroundMusic" src="background.mp3" autoplay loop></audio>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    // Get the canvas and its context
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas size
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Lynx properties
+    const lynx = {
+        x: 50,
+        y: canvas.height / 2,
+        width: 50,
+        height: 50,
+        speed: 5,
+    };
+
+    // Pine cone properties
+    const pineCones = [];
+    const pineConeSize = 30;
+
+    // Power-up properties
+    const powerUps = [];
+    const powerUpSize = 30;
+
+    // Score, Level, and High Score
+    let score = 0;
+    let level = 1;
+    let highScore = 0;
+
+    // Pine cone speed and speed increase per level
+    let pineConeSpeed = 5;
+    const speedIncreasePerLevel = 1;
+
+    // Update game elements
+    function update() {
+        // Move lynx
+        if (keys.ArrowUp && lynx.y > 0) lynx.y -= lynx.speed;
+        if (keys.ArrowDown && lynx.y < canvas.height - lynx.height) lynx.y += lynx.speed;
+        if (keys.ArrowLeft && lynx.x > 0) lynx.x -= lynx.speed;
+        if (keys.ArrowRight && lynx.x < canvas.width - lynx.width) lynx.x += lynx.speed;
+
+        // Move pine cones
+        for (let i = 0; i < pineCones.length; i++) {
+            pineCones[i].x -= pineConeSpeed;
+
+            // Check for collision with lynx
+            if (
+                lynx.x < pineCones[i].x + pineConeSize &&
+                lynx.x + lynx.width > pineCones[i].x &&
+                lynx.y < pineCones[i].y + pineConeSize &&
+                lynx.y + lynx.height > pineCones[i].y
+            ) {
+                // Pine cone collected
+                pineCones.splice(i, 1);
+                score++;
+                playCollectSound();
+            }
+
+            // Remove off-screen pine cones
+            if (pineCones[i] && pineCones[i].x < 0) {
+                pineCones.splice(i, 1);
+            }
+        }
+
+        // Move power-ups
+        for (let i = 0; i < powerUps.length; i++) {
+            powerUps[i].x -= 6; // Power-ups move at a different speed
+
+            // Check for collision with lynx
+            if (
+                lynx.x < powerUps[i].x + powerUpSize &&
+                lynx.x + lynx.width > powerUps[i].x &&
+                lynx.y < powerUps[i].y + powerUpSize &&
+                lynx.y + lynx.height > powerUps[i].y
+            ) {
+                // Power-up collected
+                powerUps.splice(i, 1);
+                score += 5; // Increase score more for power-ups
+                playCollectSound();
+            }
+
+            // Remove off-screen power-ups
+            if (powerUps[i] && powerUps[i].x < 0) {
+                powerUps.splice(i, 1);
+            }
+        }
+
+        // Check for level increase
+        const nextLevelThreshold = 50 * Math.pow(2, level - 1);
+        if (score >= nextLevelThreshold) {
+            level++;
+            pineConeSpeed += speedIncreasePerLevel;
+            // Add code to initialize or update game elements for the new level
+        }
+
+        // Check for high score
+        if (score > highScore) {
+            highScore = score;
+        }
+
+        // Add new pine cone at intervals
+        if (Math.random() < 0.02) {
+            pineCones.push({
+                x: canvas.width,
+                y: Math.random() * (canvas.height - pineConeSize),
+            });
+        }
+
+        // Add new power-up at intervals
+        if (Math.random() < 0.01) {
+            powerUps.push({
+                x: canvas.width,
+                y: Math.random() * (canvas.height - powerUpSize),
+            });
+        }
+    }
+
+    // Draw game elements
+    function draw() {
+        // Draw sky
+        ctx.fillStyle = '#87CEEB'; // Sky Blue
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw ground
+        ctx.fillStyle = '#008000'; // Green
+        ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+
+        // Draw lynx
+        ctx.fillStyle = 'brown';
+        ctx.fillRect(lynx.x, lynx.y, lynx.width, lynx.height);
+
+        // Draw pine cones
+        ctx.fillStyle = 'green';
+        for (const pineCone of pineCones) {
+            ctx.fillRect(pineCone.x, pineCone.y, pineConeSize, pineConeSize);
+        }
+
+        // Draw power-ups
+        ctx.fillStyle = 'gold';
+        for (const powerUp of powerUps) {
+            ctx.fillRect(powerUp.x, powerUp.y, powerUpSize, powerUpSize);
+        }
+
+        // Draw score
+        ctx.fillStyle = 'black';
+        ctx.font = '24px Arial';
+        ctx.fillText('Score: ' + score, 20, 30);
+
+        // Draw level
+        ctx.fillStyle = 'black';
+        ctx.font = '24px Arial';
+        ctx.fillText('Level: ' + level, canvas.width - 150, 30);
+
+        // Draw high score
+        ctx.fillStyle = 'black';
+        ctx.font = '24px Arial';
+    
+
+        // Draw instructions
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.fillText('Use keys ◄ ▲ ▼ ► to move. Collect scores to go up next level.', 20, canvas.height - 20);
+    }
+
+    // Handle keyboard input
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
+
+    // Game loop
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game loop
+    gameLoop();
+
+    // Play sound on pine cone collection or power-up collection
+    function playCollectSound() {
+        const collectSound = document.getElementById('collectSound');
+        collectSound.play();
+    }
+</script>
+
+</body>
+</html>

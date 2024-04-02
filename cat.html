@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenging Game</title>
+    <style>
+body {
+    display: flex;
+    flex-direction: row; /* Set to row to make buttons appear horizontally */
+    align-items: center;
+    text-align: center;
+    flex-wrap: nowrap; /* Prevent wrapping to the next line */
+}
+
+canvas {
+    border: 1px solid #000;
+    display: block;
+    margin: 20px auto;
+}
+
+button {
+    margin: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
+    </style>
+</head>
+<body>
+    <h1>Cat Game</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <button onclick="stopGame()">Stop</button>
+    <button onclick="restartGame()">Restart</button>
+    <button onclick="increaseDifficulty()">Increase Difficulty</button>
+    <button onclick="decreaseDifficulty()">Decrease Difficulty</button>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let score = 0;
+        let gameOver = false;
+        let interval;
+        let playerX = 400; // Initial x position
+        let playerY = 550; // Initial y position
+        let playerW = 30;  // Smaller player size
+        let playerH = 30;  // Smaller player size
+        let playerSpeed = 50;
+        let enemyX, enemyY, enemyW, enemyH, enemySpeed, difficultyMultiplier;
+
+        let playerImage = new Image();
+        playerImage.src = 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/775dfae9-f9b5-46c9-bcd8-62e7d40ba177/dg8idr3-46121b2a-2beb-4f64-9caa-0d046f39eac0.gif/v1/fill/w_410,h_360/black_cat_pixel_art_pagedoll_gif_by_vapcool_dg8idr3-fullview.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MzYwIiwicGF0aCI6IlwvZlwvNzc1ZGZhZTktZjliNS00NmM5LWJjZDgtNjJlN2Q0MGJhMTc3XC9kZzhpZHIzLTQ2MTIxYjJhLTJiZWItNGY2NC05Y2FhLTBkMDQ2ZjM5ZWFjMC5naWYiLCJ3aWR0aCI6Ijw9NDEwIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmltYWdlLm9wZXJhdGlvbnMiXX0.rQxh3kCA9I1mVjZjvMaVWB0VfOEu0tvyPLJQDo9OtE8'; // Placeholder image URL
+
+        let enemyImage = new Image();
+        enemyImage.src = 'https://png.pngtree.com/png-vector/20220919/ourmid/pngtree-witch-broom-cartoon-illustration-png-image_6206795.png'; // Placeholder image URL
+
+        function drawPlayer() {
+            ctx.drawImage(playerImage, playerX, playerY, playerW, playerH);
+        }
+
+        function drawEnemy() {
+            ctx.drawImage(enemyImage, enemyX, enemyY, enemyW, enemyH);
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, 800, 600);
+            drawPlayer();
+            drawEnemy();
+            drawScore();
+
+            enemyY += enemySpeed;
+
+            if (enemyY > 550) {
+                enemyX = Math.random() * 750;
+                enemyY = 0;
+                enemySpeed += 0.1 * difficultyMultiplier; // Apply difficulty multiplier to enemy speed
+                score++;
+            }
+
+            if (isColliding(playerX, playerY, playerW, playerH, enemyX, enemyY, enemyW, enemyH)) {
+                clearInterval(interval);
+                gameOver = true;
+            }
+
+            if (gameOver) {
+                drawGameOver();
+            }
+        }
+
+        function restartGame() {
+            score = 0;
+            gameOver = false;
+            playerX = 400;
+            playerY = 550;
+            enemyX = Math.random() * 750;
+            enemyY = 0;
+            enemyW = 50;  // Reset enemy size
+            enemyH = 50;  // Reset enemy size
+            enemySpeed = 5; // Reset enemy speed
+
+            interval = setInterval(update, 20);
+        }
+
+        function handleInput(event) {
+            if (gameOver) {
+                return;
+            }
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    playerX -= playerSpeed;
+                    if (playerX < 0) {
+                        playerX = 0;
+                    }
+                    break;
+                case 'ArrowRight':
+                    playerX += playerSpeed;
+                    if (playerX > 750) {
+                        playerX = 750;
+                    }
+                    break;
+            }
+        }
+
+        function drawScore() {
+            ctx.font = '30px Arial';
+            ctx.fillStyle = '#000';
+            ctx.fillText('Score: ' + score, 10, 40);
+        }
+
+        function drawGameOver() {
+            ctx.font = '50px Arial';
+            ctx.fillStyle = '#000';
+            ctx.fillText('Game Over', 250, 300);
+        }
+
+        function isColliding(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return !(x1 > x2 + w2 || x1 + w1 < x2 || y1 > y2 + h2 || y1 + h1 < y2);
+        }
+
+        window.addEventListener('keydown', handleInput);
+
+        function stopGame() {
+            clearInterval(interval);
+        }
+        function increaseDifficulty() {
+            difficultyMultiplier += 0.5; // Increase difficulty by adjusting the multiplier
+            alert('Difficulty increased!');
+        }
+
+        function decreaseDifficulty() {
+            if (difficultyMultiplier > 1) {
+                difficultyMultiplier -= 0.5; // Decrease difficulty by adjusting the multiplier
+                alert('Difficulty decreased!');
+            } else {
+                alert('Minimum difficulty reached!');
+            }
+        }
+        function restartGame() {
+            score = 0;
+            gameOver = false;
+            playerX = 400;
+            playerY = 550;
+            enemyX = Math.random() * 750;
+            enemyY = 0;
+            enemyW = 50;
+            enemyH = 50;
+            enemySpeed = 5;
+            difficultyMultiplier = 1;
+
+            interval = setInterval(update, 20);
+        }
+        restartGame(); // Start the game loop
+    </script>
+</body>
+</html>

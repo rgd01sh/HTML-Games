@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Maze Game</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid white;
+            margin: auto;
+        }
+
+        button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: white;
+            border-radius: 40%; /* Make it a circle */
+        }
+
+        .game-info {
+            color: white;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        .game-over-message {
+            color: white;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 style="text-align: center; color: white;">Space Maze Game</h1>
+    <canvas width="800" height="600"></canvas>
+    <div style="text-align: center;">
+        <button id="startButton" onclick="startGame()">Start</button>
+        <button id="instructionsButton" onclick="showInstructions()">?</button>
+        <button id="levelsButton" onclick="showLevels()">Levels</button>
+        <button id="nextLevelButton" onclick="nextLevel()" style="display: none;">Next Level</button>
+        <button id="stopButton" onclick="stopGame()" style="display: none;">Stop</button>
+        <button id="continueButton" onclick="continueGame()" style="display: none;">Continue</button>
+        <button id="restartButton" onclick="restartGame()" style="display: none;">Restart</button>
+    </div>
+    <div id="gameInfo" class="game-info"></div>
+    <div id="gameOverMessage" class="game-over-message"></div>
+
+    <script>
+        const levelDescriptions = [
+            "Introduction to the space maze. Few obstacles, slower asteroids.",
+            "Increasing maze complexity. Asteroids speed up slightly.",
+            "Additional maze walls. Faster asteroids, more challenging.",
+            "Maze becomes a labyrinth. Asteroids speed up again.",
+            "Introduction of maze dead-ends. Asteroids become more unpredictable.",
+            "Complex maze design. Increased number of asteroids.",
+            "Tight passages in the maze. Asteroids move in varying patterns.",
+            "Advanced maze with obstacles. Asteroids speed up significantly.",
+            "Expert-level maze challenges. High-speed asteroids, limited safe zones.",
+            "Ultimate space maze. Extreme challenge with fast and unpredictable obstacles."
+        ];
+
+        const totalLevels = levelDescriptions.length;
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const player = { x: 40, y: 40, size: 20, color: 'cyan', speed: 8, score: 0, health: 100 };
+        const goal = { x: 600, y: 400, size: 20, color: 'yellow' }; // Fixed position
+        const bullets = [];
+        let asteroids = [];
+        let maze; // Maze will be generated dynamically
+        const asteroidSpawnDelay = 2500;
+        const powerUpSpawnDelay = 5000;
+        let lastAsteroidSpawnTime = 0;
+        let lastPowerUpSpawnTime = 0;
+        let gameInterval;
+        let gamePaused = false;
+        let gameStarted = false;
+        let playerLives = 3;
+        let currentLevel = 1;
+        let asteroidSpeed = 0.008; // Initial asteroid speed
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw starry background
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                ctx.fillStyle = 'white';
+                ctx.fillRect(x, y, 1, 1);
+            }
+
+            // Draw static maze walls
+            maze.forEach((row, i) => {
+                row.forEach((cell, j) => {
+                    if (cell === 1) {
+                        ctx.fillStyle = 'gray'; // Wall
+                        ctx.fillRect(j * 40, i * 40, 40, 40);
+                    }
+                });
+            });
+
+            // Draw game elements
+            ctx.fillStyle = goal.color;
+            ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
+
+            // Draw player spaceship (as a circle)
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw asteroids
+            asteroids.forEach(asteroid => {
+                ctx.fillStyle = 'purple';
+                ctx.beginPath();
+                ctx.arc(asteroid.x, asteroid.y, asteroid.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Check for collision with player
+                if (detectCollision(player, asteroid)) {
+                    player.health -= 10;
+                    asteroids.splice(asteroids.indexOf(asteroid), 1);
+                    checkGameOver();
+                }
+            });
+
+            // Draw bullets
+            bullets.forEach(bullet => {
+                ctx.fillStyle = 'yellow';
+                ctx.fillRect(bullet.x, bullet.y, bullet.size, bullet.size);
+            });
+
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${player.score}`, 10, 30);
+            ctx.fillText(`Health: ${player.health}`, 10, 60);
+
+            // Display current level
+            ctx.fillText(`Level: ${currentLevel} `, canvas.width - 100, 30);
+        }
+
+        function movePlayer(direction) {
+    const newX = player.x + direction.x * player.speed;
+    const newY = player.y + direction.y * player.speed;
+
+    const playerBox = {
+        x: newX,
+        y: newY,
+        size: player.size,
+    };
+
+    // Check for collision with canvas boundaries
+    if (
+        newX >= 0 &&
+        newY >= 0 &&
+        newX + player.size <= canvas.width &&
+        newY + player.size <= canvas.height
+    ) {
+        // Check for collision with maze walls
+        if (!isCollisionWithWalls(playerBox)) {
+            player.x = newX;
+            player.y = newY;
+        }
+    }
+
+    // Check for collision with goal
+    if (
+        player.x < goal.x + goal.size &&
+        player.x + player.size > goal.x &&
+        player.y < goal.y + goal.size &&
+        player.y + player.size > goal.y
+    ) {
+        // Goal reached, increase score and reset player position
+        player.score += 10;
+        resetPlayer();
+        nextLevel();
+    }
+}
+
+        function moveBullets() {
+            bullets.forEach((bullet, index) => {
+                bullet.y -= 5;
+
+                if (bullet.y < 0 || bulletHitsAsteroid(bullet)) {
+                    bullets.splice(index, 1);
+                }
+            });
+        }
+
+        function bulletHitsAsteroid(bullet) {
+            for (let i = 0; i < asteroids.length; i++) {
+                if (detectCollision(bullet, asteroids[i])) {
+                    asteroids.splice(i, 1);
+                    player.score += 5;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function moveAsteroids() {
+            asteroids.forEach((asteroid, index) => {
+                asteroid.y += asteroidSpeed; // Asteroid speed
+
+                // Check for collision with player
+                if (detectCollision(player, asteroid)) {
+                    player.health -= 10;
+                    asteroids.splice(asteroids.indexOf(asteroid), 1);
+                    checkGameOver();
+                }
+
+                // Check if asteroid is out of bounds
+                if (asteroid.y > canvas.height) {
+                    asteroids.splice(index, 1);
+                }
+            });
+
+            // Spawn new asteroids
+            const currentTime = new Date().getTime();
+            if (currentTime - lastAsteroidSpawnTime > asteroidSpawnDelay) {
+                spawnAsteroid();
+                lastAsteroidSpawnTime = currentTime;
+            }
+        }
+
+        function resetPlayer() {
+            player.x = 40;
+            player.y = 40;
+        }
+
+        function spawnAsteroid() {
+            const asteroid = {
+                x: Math.random() * canvas.width,
+                y: -20,
+                size: 50, // Increased size
+            };
+            asteroids.push(asteroid);
+        }
+
+        function isCollisionWithWalls(box) {
+            // Check if the box collides with maze walls
+            for (let i = 0; i < maze.length; i++) {
+                for (let j = 0; j < maze[i].length; j++) {
+                    if (maze[i][j] === 1) {
+                        const wallBox = {
+                            x: j * 40,
+                            y: i * 40,
+                            size: 40,
+                        };
+                        if (detectCollision(box, wallBox)) {
+                            return true; // Collision with wall
+                        }
+                    }
+                }
+            }
+            return false; // No collision with walls
+        }
+
+        function detectCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.size &&
+                rect1.x + rect1.size > rect2.x &&
+                rect1.y < rect2.y + rect2.size &&
+                rect1.y + rect1.size > rect2.y
+            );
+        }
+
+        function generateNewMaze() {
+            maze = generateMaze(20, 20);
+            // Ensure a path from player to goal
+            maze[0][0] = 0;
+            maze[19][19] = 0;
+        }
+
+        function generateMaze(rows, cols) {
+            // Implement your maze generation algorithm here
+            // This example generates a simple maze with random walls
+
+            const maze = [];
+            for (let i = 0; i < rows; i++) {
+                const row = [];
+                for (let j = 0; j < cols; j++) {
+                    row.push(Math.random() < 0.3 ? 1 : 0); // 30% chance of a wall
+                }
+                maze.push(row);
+            }
+            return maze;
+        }
+
+
+        function checkGameOver() {
+            if (player.health <= 0) {
+                playerLives--;
+                if (playerLives > 0) {
+                    resetPlayer();
+                    document.getElementById('gameInfo').innerText = ` `;
+                } else {
+                    gameOver();
+                }
+            }
+        }
+
+        function gameOver() {
+            clearInterval(gameInterval);
+            gameStarted = false;
+            document.getElementById('gameOverMessage').innerText = `Game Over | Final Score: ${player.score}`;
+            document.getElementById('startButton').style.display = 'inline-block';
+            document.getElementById('restartButton').style.display = 'inline-block';
+            document.getElementById('continueButton').style.display = 'none';
+            document.getElementById('stopButton').style.display = 'none';
+            document.getElementById('nextLevelButton').style.display = 'none';
+        }
+
+        function startGame() {
+            if (!gameStarted) {
+                gameStarted = true;
+                generateNewMaze(); // Generate a new maze when the game starts
+                gameInterval = setInterval(gameLoop, 1000 / 60);
+                document.getElementById('startButton').style.display = 'none';
+                document.getElementById('instructionsButton').style.display = 'none';
+                document.getElementById('levelsButton').style.display = 'none';
+                document.getElementById('stopButton').style.display = 'inline-block';
+                document.getElementById('gameInfo').innerText = ` `;
+                document.getElementById('gameOverMessage').innerText = '';
+            }
+        }
+
+        function showInstructions() {
+            alert(`Instructions: Space Maze Adventure Controls:
+
+Arrow keys: Move spaceship
+Spacebar: Shoot bullets
+Objective:
+
+Reach the yellow square to complete levels.
+Avoid asteroids; they reduce your health.
+Health and Lives:
+
+Start with 100% health.
+Collisions deduct 10% health.
+Three lives; the game ends if lost.
+Scoring:
+
+Earn points for reaching goals and shooting asteroids.
+Game Buttons:
+
+Start: Begin your space adventure.
+Stop: Pause the game.
+Continue: Resume play.
+Restart: Restart the current level.
+Next Level: Progress to the next level.
+Game Over:
+
+The game ends if lives run out.
+Click "Restart" to try again.
+Levels:
+
+"Levels" button shows the current level.
+Pro Tips:
+
+Monitor health and game info.
+Shoot asteroids strategically.
+Speed and precision are crucial.
+Good luck, space explorer!`);
+        }
+
+        function showLevels() {
+            let levelsInfo = "Levels:\n\n";
+            for (let i = 0; i < totalLevels; i++) {
+                levelsInfo += `Level ${i + 1}\n${levelDescriptions[i]}\n\n`;
+            }
+            levelsInfo += `Current Level: ${currentLevel} / ${totalLevels}`;
+            alert(levelsInfo);
+        }
+
+        function stopGame() {
+            if (gameStarted) {
+                clearInterval(gameInterval);
+                gamePaused = true;
+                document.getElementById('continueButton').style.display = 'inline-block';
+                document.getElementById('restartButton').style.display = 'inline-block';
+            }
+        }
+
+        function continueGame() {
+            if (gamePaused) {
+                gameInterval = setInterval(gameLoop, 1000 / 30); // Lower the FPS to 30
+                gamePaused = false;
+                document.getElementById('continueButton').style.display = 'none';
+                document.getElementById('restartButton').style.display = 'none';
+            }
+        }
+
+        function restartGame() {
+            clearInterval(gameInterval);
+            resetGame();
+            startGame();
+            document.getElementById('continueButton').style.display = 'none';
+            document.getElementById('restartButton').style.display = 'none';
+        }
+
+
+   function nextLevel() {
+            currentLevel++;
+            resetGame();
+            generateNewMaze(); // Generate a new maze for the next level
+            increaseAsteroidSpeed(); // Increase asteroid speed
+            spawnInitialAsteroids(); // Spawn initial asteroids for the next level
+            document.getElementById('nextLevelButton').style.display = 'none';
+            document.getElementById('gameOverMessage').innerText = '';
+            document.getElementById('gameInfo').innerText = `Level: ${currentLevel} | Lives: ${playerLives}`;
+        }
+
+        function resetGame() {
+            player.x = 40;
+            player.y = 40;
+            player.health = 100;
+            document.getElementById('gameOverMessage').innerText = '';
+            document.getElementById('gameInfo').innerText = `Level: ${currentLevel} | Lives: ${playerLives}`;
+            bullets.length = 0;
+            asteroids.length = 0;
+            powerUps.length = 0;
+            draw();
+        }
+
+        function increaseAsteroidSpeed() {
+            asteroidSpeed += 0.5; // Increase asteroid speed by 0.5 units per level
+        }
+
+        function spawnInitialAsteroids() {
+            // Spawn initial asteroids based on the level
+            const initialAsteroidCount = 5 + currentLevel * 2; // Increase asteroid count with level
+            for (let i = 0; i < initialAsteroidCount; i++) {
+                spawnAsteroid();
+            }
+        }
+
+        document.addEventListener('keydown', function (event) {
+            switch (event.key) {
+                case 'ArrowUp':
+                    movePlayer({ x: 0, y: -1 });
+                    break;
+                case 'ArrowDown':
+                    movePlayer({ x: 0, y: 1 });
+                    break;
+                case 'ArrowLeft':
+                    movePlayer({ x: -1, y: 0 });
+                    break;
+                case 'ArrowRight':
+                    movePlayer({ x: 1, y: 0 });
+                    break;
+                case ' ':
+                    bullets.push({ x: player.x + player.size / 2 - 5, y: player.y, size: 10 });
+                    break;
+            }
+            draw();
+        });
+
+        function gameLoop() {
+            moveBullets();
+            moveAsteroids();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initial call to generate the first maze
+        generateNewMaze();
+
+        // Initial call to draw the initial state
+        draw();
+    </script>
+</body>
+
+</html>

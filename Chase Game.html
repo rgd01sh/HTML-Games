@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chase Game</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #000;
+        }
+
+        button {
+            margin: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+
+        #levelDisplay {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        #timerDisplay {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chase Game</h1>
+    <div id="levelDisplay">Level: 1</div>
+    <div id="timerDisplay">Time: 5:00</div>
+    <canvas id="chaseCanvas" width="800" height="600"></canvas>
+    <br>
+    <button onclick="stopGame()" id="stopButton">Stop</button>
+    <button onclick="restartGame()">Restart</button>
+    <button onclick="nextLevel()">Next Level</button>
+    <button onclick="continueGame()" id="continueButton" style="display: none;">Continue</button>
+
+    <script>
+        const canvas = document.getElementById('chaseCanvas');
+        const ctx = canvas.getContext('2d');
+    
+        const player = {
+            x: 50,
+            y: 50,
+            size: 20,
+            color: '#00F',
+            speed: 15,
+        };
+    
+        const chaser = {
+            x: 400,
+            y: 400,
+            size: 20,
+            color: '#F00',
+            speed: 2,
+        };
+    
+        let gameRunning = true;
+        let currentLevel = 1;
+        let initialTimerSeconds = 300; // Initial time set to 300 seconds
+    
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+        }
+    
+        function drawChaser() {
+            ctx.fillStyle = chaser.color;
+            ctx.fillRect(chaser.x, chaser.y, chaser.size, chaser.size);
+        }
+    
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawChaser();
+            document.getElementById('levelDisplay').innerText = `Level: ${currentLevel}`;
+            document.getElementById('timerDisplay').innerText = `Time: ${formatTime(initialTimerSeconds)}`;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+    
+        function movePlayer(direction) {
+            if (!gameRunning) return;
+            player.x += direction.x * player.speed;
+            player.y += direction.y * player.speed;
+            draw();
+            checkCollision();
+        }
+    
+        function moveChaser() {
+            if (!gameRunning) return;
+            const dx = player.x - chaser.x;
+            const dy = player.y - chaser.y;
+            const angle = Math.atan2(dy, dx);
+    
+            chaser.x += Math.cos(angle) * chaser.speed;
+            chaser.y += Math.sin(angle) * chaser.speed;
+            draw();
+            checkCollision();
+        }
+    
+        function checkCollision() {
+            const dx = player.x - chaser.x;
+            const dy = player.y - chaser.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+    
+            if (distance < player.size / 2 + chaser.size / 2) {
+                gameRunning = false;
+                alert(`Game Over! The chaser caught you at Level ${currentLevel}.`);
+            } else if (player.x < 0 || player.x > canvas.width || player.y < 0 || player.y > canvas.height) {
+                gameRunning = false;
+                alert("Game Over! You went out of bounds.");
+            } else if (initialTimerSeconds === 0 && gameRunning) {
+                gameRunning = false;
+                if (confirm(`Time's up! You survived ${formatTime(60 * currentLevel)} at Level ${currentLevel}. Do you want to go to the next level?`)) {
+                    nextLevel();
+                }
+            } else if (!gameRunning && initialTimerSeconds !== 0) {
+                if (confirm(`Level ${currentLevel} Complete! Do you want to go to the next level?`)) {
+                    nextLevel();
+                }
+                // Commented out this line to avoid immediate game loop start after a level completion
+                // gameLoop();
+            }
+        }
+    
+        function increaseDifficulty() {
+            player.speed -= 1; // Decrease player speed
+            chaser.speed += 0.1; // Increase chaser speed
+            initialTimerSeconds += 100 * currentLevel; // Increase time limit for the next level
+        }
+    
+        function countdownTimer() {
+            if (initialTimerSeconds > 0 && gameRunning) {
+                initialTimerSeconds--;
+                document.getElementById('timerDisplay').innerText = `Time: ${formatTime(initialTimerSeconds)}`;
+            } else if (initialTimerSeconds === 0 && gameRunning) {
+                gameRunning = false;
+                if (confirm(`Time's up! You survived ${formatTime(60 * currentLevel)} at Level ${currentLevel}. Do you want to go to the next level?`)) {
+                    nextLevel();
+                }
+            }
+        }
+    
+        function gameLoop() {
+            moveChaser();
+            countdownTimer();
+            if (gameRunning) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    
+        function stopGame() {
+            if (confirm("Are you sure you want to stop the game?")) {
+                gameRunning = false;
+                document.getElementById('continueButton').style.display = 'inline-block';
+                document.getElementById('stopButton').style.display = 'none';
+            }
+        }
+    
+        function continueGame() {
+            gameRunning = true;
+            document.getElementById('stopButton').style.display = 'inline-block';
+            document.getElementById('continueButton').style.display = 'none';
+            gameLoop();
+        }
+    
+        function restartGame() {
+            gameRunning = true;
+            document.getElementById('stopButton').style.display = 'inline-block';
+            document.getElementById('continueButton').style.display = 'none';
+            player.x = 50;
+            player.y = 50;
+            chaser.x = 400;
+            chaser.y = 400;
+            draw();
+            gameLoop(); // Added this line to restart the game loop
+        }
+    
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    movePlayer({ x: 0, y: -1 });
+                    break;
+                case 'ArrowDown':
+                    movePlayer({ x: 0, y: 1 });
+                    break;
+                case 'ArrowLeft':
+                    movePlayer({ x: -1, y: 0 });
+                    break;
+                case 'ArrowRight':
+                    movePlayer({ x: 1, y: 0 });
+                    break;
+            }
+        });
+
+        function nextLevel() {
+            currentLevel++;
+            increaseDifficulty();
+            restartGame();
+            gameRunning = true;
+            alert(`Level ${currentLevel} started!`);
+        }
+    
+        function startGame() {
+            currentLevel = 1;
+            player.speed = 15;
+            chaser.speed = 2;
+            initialTimerSeconds = 300;
+            restartGame();
+            gameLoop();
+        }
+    
+        startGame(); // Start the game initially
+    </script>
+</body>
+</html>
