@@ -8,14 +8,21 @@
     <style>
         body {
             margin: 0;
-            background-color: black;
+            background-color: #121212; /* Darker shade for a modern dark mode */
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height for centering */
+            font-family: 'Roboto', sans-serif; /* Trendy font choice */
         }
 
         canvas {
             display: block;
-            border: 1px solid white;
+            border: none; /* Removing the border for a cleaner look */
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* Glowing effect */
             margin: auto;
+            border-radius: 10px; /* Slight rounding of corners */
         }
 
         button {
@@ -23,22 +30,33 @@
             padding: 10px;
             margin: 5px;
             cursor: pointer;
-            background-color: white;
-            border-radius: 40%; /* Make it a circle */
+            background-color: #1c1c1c; /* Dark buttons for contrast */
+            color: white; /* Text color for readability */
+            border: 2px solid white; /* Defined border for visibility */
+            border-radius: 50%; /* Perfect circle buttons */
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
         }
 
-        .game-info {
-            color: white;
-            text-align: center;
-            margin-top: 10px;
-            font-size: 18px;
+        button:hover {
+            background-color: #333; /* Slightly lighter on hover for feedback */
         }
 
+        .game-info,
         .game-over-message {
             color: white;
             text-align: center;
             margin-top: 10px;
+            font-size: 18px;
+            background-color: #1c1c1c; /* Background for info messages */
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px; /* Rounded corners for the message boxes */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Shadow for depth */
+        }
+
+        .game-over-message {
             font-size: 24px;
+            font-weight: bold; /* Bolder text for importance */
         }
     </style>
 </head>
