@@ -8,9 +8,65 @@
             margin: 0;
             overflow: hidden;
             background-color: #87CEEB; /* Sky Blue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Roboto', sans-serif;
         }
         canvas {
             display: block;
+            max-width: 800px; /* Limit the size for better control */
+            max-height: 600px;
+            width: 100%; /* Responsive to screen size */
+            height: auto;
+            border: none; /* Cleaner look without border */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Soft shadow for depth */
+            border-radius: 10px; /* Rounded corners */
+        }
+        .lynx {
+            width: 50px; /* Size of the lynx */
+            height: 50px;
+            background-color: #795548; /* Base color for lynx */
+            background-image: linear-gradient(145deg, #6D4C41, #8D6E63); /* Gradient effect for depth */
+            border-radius: 10%; /* Slightly rounded corners for a softer look */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); /* Shadow for 3D effect */
+            position: absolute; /* Positioning relative to the game area */
+            transform: rotateY(0deg) rotateX(0deg); /* Initial 3D rotation */
+            transform-style: preserve-3d; /* Preserve 3D for pseudo-elements */
+        }
+
+        /* Animation for the lynx to move in 3D space */
+        @keyframes moveInSpace {
+            0%, 100% {
+                transform: translateZ(0) rotateY(0deg) rotateX(0deg);
+            }
+            50% {
+                transform: translateZ(20px) rotateY(180deg) rotateX(180deg); /* 3D flip effect */
+            }
+        }
+
+        /* Applying the animation to the lynx */
+        .lynx {
+            animation: moveInSpace 8s linear infinite;
+        }
+
+        /* Adding pseudo-elements for additional 3D effects */
+        .lynx::before,
+        .lynx::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 10%;
+            background: inherit;
+            top: 0;
+            left: 0;
+            transform: translateZ(-1px); /* Slight depth */
+        }
+
+        .lynx::after {
+            transform: translateZ(1px); /* Slight depth */
         }
     </style>
     <title>Lynx Pine Cone Collector</title>
@@ -57,6 +113,15 @@
     // Pine cone speed and speed increase per level
     let pineConeSpeed = 5;
     const speedIncreasePerLevel = 1;
+
+    // Handle keyboard input
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+    });
 
     // Update game elements
     function update() {
@@ -152,14 +217,19 @@
         ctx.fillStyle = '#008000'; // Green
         ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
 
-        // Draw lynx
+        // Draw lynx with new style
+        ctx.beginPath();
         ctx.fillStyle = 'brown';
-        ctx.fillRect(lynx.x, lynx.y, lynx.width, lynx.height);
+        ctx.arc(lynx.x + lynx.width / 2, lynx.y + lynx.height / 2, lynx.width / 2, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Draw pine cones
-        ctx.fillStyle = 'green';
+        // Draw pine cones with new style
         for (const pineCone of pineCones) {
-            ctx.fillRect(pineCone.x, pineCone.y, pineConeSize, pineConeSize);
+            ctx.beginPath();
+            ctx.arc(pineCone.x, pineCone.y, pineConeSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'green';
+            ctx.fill();
+            ctx.closePath();
         }
 
         // Draw power-ups
@@ -181,7 +251,7 @@
         // Draw high score
         ctx.fillStyle = 'black';
         ctx.font = '24px Arial';
-    
+        ctx.fillText('High Score: ' + highScore, canvas.width - 150, 60);
 
         // Draw instructions
         ctx.fillStyle = 'black';
@@ -189,14 +259,11 @@
         ctx.fillText('Use keys ◄ ▲ ▼ ► to move. Collect scores to go up next level.', 20, canvas.height - 20);
     }
 
-    // Handle keyboard input
-    const keys = {};
-    window.addEventListener('keydown', (e) => {
-        keys[e.code] = true;
-    });
-    window.addEventListener('keyup', (e) => {
-        keys[e.code] = false;
-    });
+    // Play sound on pine cone collection or power-up collection
+    function playCollectSound() {
+        const collectSound = document.getElementById('collectSound');
+        collectSound.play();
+    }
 
     // Game loop
     function gameLoop() {
@@ -208,12 +275,8 @@
     // Start the game loop
     gameLoop();
 
-    // Play sound on pine cone collection or power-up collection
-    function playCollectSound() {
-        const collectSound = document.getElementById('collectSound');
-        collectSound.play();
-    }
 </script>
 
 </body>
 </html>
+
