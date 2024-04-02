@@ -8,30 +8,47 @@
         body {
             text-align: center;
             font-family: 'Arial', sans-serif;
+            background: #f4f4f4; /* Light background for a fresh look */
+            color: #333; /* Modern font color */
+            padding: 20px;
         }
-
+    
         canvas {
             display: block;
             margin: 20px auto;
-            border: 2px solid #000;
+            border: none; /* Remove border for a cleaner look */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Add shadow for depth */
+            border-radius: 10px; /* Rounded corners */
         }
-
+    
         button {
             margin: 10px;
-            padding: 5px 10px;
+            padding: 10px 20px; /* Increase padding for a better touch area */
             font-size: 16px;
+            font-weight: bold; /* Bold font for better readability */
+            color: #fff; /* White text */
+            background: #007bff; /* Trendy blue background */
+            border: none; /* Remove border */
+            border-radius: 5px; /* Slightly rounded corners */
+            cursor: pointer; /* Pointer cursor on hover */
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
         }
-
-        #levelDisplay {
+    
+        button:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+    
+        #levelDisplay, #timerDisplay {
             font-size: 20px;
             margin-bottom: 10px;
-        }
-
-        #timerDisplay {
-            font-size: 20px;
-            margin-bottom: 10px;
+            background: #e7e7e7; /* Light background for display elements */
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px; /* Slightly rounded corners */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
         }
     </style>
+    
 </head>
 <body>
     <h1>Chase Game</h1>
