@@ -3,36 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Challenging Game</title>
+    <title>Cat Game</title>
     <style>
-body {
-    display: flex;
-    flex-direction: row; /* Set to row to make buttons appear horizontally */
-    align-items: center;
-    text-align: center;
-    flex-wrap: nowrap; /* Prevent wrapping to the next line */
-}
-
-canvas {
-    border: 1px solid #000;
-    display: block;
-    margin: 20px auto;
-}
-
-button {
-    margin: 10px;
-    padding: 10px;
-    font-size: 16px;
-}
+        body {
+            display: flex;
+            flex-direction: column; /* Align buttons vertically */
+            align-items: center;
+            justify-content: center; /* Center items horizontally */
+            text-align: center;
+            background: #f7f7f7; /* Light background for a fresh look */
+            font-family: 'Roboto', sans-serif; /* Modern font */
+            padding: 20px 0; /* Padding at the top and bottom */
+        }
+        
+        canvas {
+            border: none; /* Remove border for a cleaner look */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Add shadow for depth */
+            border-radius: 10px; /* Rounded corners */
+            margin: 20px auto;
+        }
+        
+        button {
+            margin: 10px;
+            padding: 10px 20px; /* Increase padding for a better touch area */
+            font-size: 16px;
+            font-weight: bold; /* Bold font for better readability */
+            color: #fff; /* White text */
+            background: rgb(205, 117, 192); /* Trendy blue background */
+            border: none; /* Remove border */
+            border-radius: 5px; /* Slightly rounded corners */
+            cursor: pointer; /* Pointer cursor on hover */
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
+        }
+        
+        button:hover {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
     </style>
 </head>
 <body>
-    <h1>Cat Game</h1>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <button onclick="stopGame()">Stop</button>
-    <button onclick="restartGame()">Restart</button>
-    <button onclick="increaseDifficulty()">Increase Difficulty</button>
-    <button onclick="decreaseDifficulty()">Decrease Difficulty</button>
+    <h1>Move the Cat</h1>
+    <canvas id="gameCanvas" width="600" height="400"></canvas> <!-- Smaller canvas size -->
+    <div>
+        <button onclick="stopGame()">Stop</button>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+    <div>
+        <button onclick="decreaseDifficulty()">Decrease Difficulty</button>
+        <button onclick="increaseDifficulty()">Increase Difficulty</button>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -40,10 +59,10 @@ button {
         let score = 0;
         let gameOver = false;
         let interval;
-        let playerX = 400; // Initial x position
-        let playerY = 550; // Initial y position
-        let playerW = 30;  // Smaller player size
-        let playerH = 30;  // Smaller player size
+        let playerX = 300; // Initial x position for smaller canvas
+        let playerY = 350; // Initial y position for smaller canvas
+        let playerW = 40;  // Larger player size
+        let playerH = 40;  // Larger player size
         let playerSpeed = 50;
         let enemyX, enemyY, enemyW, enemyH, enemySpeed, difficultyMultiplier;
 
@@ -54,25 +73,25 @@ button {
         enemyImage.src = 'https://png.pngtree.com/png-vector/20220919/ourmid/pngtree-witch-broom-cartoon-illustration-png-image_6206795.png'; // Placeholder image URL
 
         function drawPlayer() {
-            ctx.drawImage(playerImage, playerX, playerY, playerW, playerH);
+            ctx.drawImage(playerImage, playerX, playerY, playerW, playerH); // Use larger player size
         }
 
         function drawEnemy() {
-            ctx.drawImage(enemyImage, enemyX, enemyY, enemyW, enemyH);
+            ctx.drawImage(enemyImage, enemyX, enemyY, enemyW, enemyH); // Use larger enemy size
         }
 
         function update() {
-            ctx.clearRect(0, 0, 800, 600);
+            ctx.clearRect(0, 0, 600, 400); // Adjust for smaller canvas size
             drawPlayer();
             drawEnemy();
             drawScore();
 
             enemyY += enemySpeed;
 
-            if (enemyY > 550) {
-                enemyX = Math.random() * 750;
+            if (enemyY > 400) { // Adjust for smaller canvas size
+                enemyX = Math.random() * 550; // Adjust for smaller canvas size
                 enemyY = 0;
-                enemySpeed += 0.1 * difficultyMultiplier; // Apply difficulty multiplier to enemy speed
+                enemySpeed += 0.1 * difficultyMultiplier;
                 score++;
             }
 
@@ -89,13 +108,14 @@ button {
         function restartGame() {
             score = 0;
             gameOver = false;
-            playerX = 400;
-            playerY = 550;
-            enemyX = Math.random() * 750;
+            playerX = 300; // Initial x position for smaller canvas
+            playerY = 350; // Initial y position for smaller canvas
+            enemyX = Math.random() * 550; // Adjust for smaller canvas size
             enemyY = 0;
-            enemyW = 50;  // Reset enemy size
-            enemyH = 50;  // Reset enemy size
-            enemySpeed = 5; // Reset enemy speed
+            enemyW = 50;  // Larger enemy size
+            enemyH = 50;  // Larger enemy size
+            enemySpeed = 5;
+            difficultyMultiplier = 1;
 
             interval = setInterval(update, 20);
         }
@@ -114,23 +134,23 @@ button {
                     break;
                 case 'ArrowRight':
                     playerX += playerSpeed;
-                    if (playerX > 750) {
-                        playerX = 750;
+                    if (playerX > 550) { // Adjust for smaller canvas size
+                        playerX = 550; // Adjust for smaller canvas size
                     }
                     break;
             }
         }
 
         function drawScore() {
-            ctx.font = '30px Arial';
+            ctx.font = '20px Arial'; // Adjust font size
             ctx.fillStyle = '#000';
-            ctx.fillText('Score: ' + score, 10, 40);
+            ctx.fillText('Score: ' + score, 10, 30); // Adjust position for smaller canvas size
         }
 
         function drawGameOver() {
-            ctx.font = '50px Arial';
+            ctx.font = '30px Arial'; // Adjust font size
             ctx.fillStyle = '#000';
-            ctx.fillText('Game Over', 250, 300);
+            ctx.fillText('Game Over', 200, 200); // Adjust position for smaller canvas size
         }
 
         function isColliding(x1, y1, w1, h1, x2, y2, w2, h2) {
@@ -142,33 +162,38 @@ button {
         function stopGame() {
             clearInterval(interval);
         }
-        function increaseDifficulty() {
-            difficultyMultiplier += 0.5; // Increase difficulty by adjusting the multiplier
-            alert('Difficulty increased!');
-        }
-
         function decreaseDifficulty() {
-            if (difficultyMultiplier > 1) {
-                difficultyMultiplier -= 0.5; // Decrease difficulty by adjusting the multiplier
-                alert('Difficulty decreased!');
-            } else {
-                alert('Minimum difficulty reached!');
-            }
-        }
-        function restartGame() {
-            score = 0;
-            gameOver = false;
-            playerX = 400;
-            playerY = 550;
-            enemyX = Math.random() * 750;
-            enemyY = 0;
-            enemyW = 50;
-            enemyH = 50;
-            enemySpeed = 5;
-            difficultyMultiplier = 1;
+    if (enemySpeed > 1) { // Ensure the speed doesn't become too fast
+        enemySpeed -= 1; // Decrease the value to increase speed
+        alert('Difficulty decreased!');
+    } else {
+        alert('Minimum difficulty reached!');
+    }
+}
 
-            interval = setInterval(update, 20);
-        }
+function increaseDifficulty() {
+    enemySpeed += 1; // Increase the value to decrease speed
+    alert('Difficulty increased!');
+}
+
+function restartGame() {
+    score = 0;
+    gameOver = false;
+    playerX = 300; // Initial x position for smaller canvas
+    playerY = 350; // Initial y position for smaller canvas
+    enemyX = Math.random() * 550; // Adjust for smaller canvas size
+    enemyY = 0;
+    enemyW = 50;  // Larger enemy size
+    enemyH = 50;  // Larger enemy size
+    enemySpeed = 5; // Reset speed
+    difficultyMultiplier = 1;
+
+    if (interval) {
+        clearInterval(interval);
+    }
+    interval = setInterval(update, 20);
+}
+
         restartGame(); // Start the game loop
     </script>
 </body>
